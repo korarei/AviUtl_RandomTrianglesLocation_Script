@@ -1,4 +1,4 @@
-# AviUtl_RandomTrianglesLocation_Script
+# ランダム三角ポリ配置
 三角形ポリゴンで構成された面を作成し、そのポリゴンをランダムで表示するAviUtlスクリプト
 
 ## はじめに

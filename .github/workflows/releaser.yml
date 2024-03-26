@@ -20,7 +20,7 @@ jobs:
 
     - name: Create zip file
       run: |
-        git ls-files | grep -vE ".gitattributes|.github" | zip -q -@ "ランダム三角ポリ配置"_${{ github.ref_name }}.zip
+        git ls-files | grep -vE ".gitattributes|.github" | zip -q -@ RandomTrianglesLocation_${{ github.ref_name }}.zip
 
     - name: Create release note
       run: |
@@ -42,6 +42,6 @@ jobs:
     - name: Create release
       uses: softprops/action-gh-release@v2
       with:
-        name: ${{ github.ref_name }}
+        name: ランダム三角ポリ配置_${{ github.ref_name }}
         files: '*.zip'
         body_path: ReleaseNote.txt
