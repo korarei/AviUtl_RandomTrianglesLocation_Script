@@ -1,0 +1,123 @@
+--[[
+    ランダム三角ポリ配置
+
+    
+    patch.aulがあればobj.randexを使用します。
+    
+    スライダーの説明
+        X個数：X軸方向の個数。
+        Y個数：Y軸方向の個数。
+        間隔：三角形の間隔。
+        個数：ランダム配置有効時、何個配置するか指定する。（完全ランダムなので低確率で同じ場所に出現する。）
+    
+    チェックボックス、ランダム配置について
+        チェックなし：画像ループ。交互に反転します。
+        チェックあり：チェックなしで表示された三角形の場所のどこかにランダムで指定された個数だけ描画する。
+    
+    ダイアログについて
+        サイズ：図形のサイズ。
+        色：図形の色。
+        縦横比：図形の縦横比。通常は-100~100だが、ここでは-1~1で入力。
+        ライン幅：図形のライン幅。
+        縁取り：縁取りの有効無効を切り替える。+マークで追加できる縁取りと異なり、こちらでかけると間隔が自動計算される。
+        縁サイズ：縁取りのサイズ。
+        縁ぼかし：縁取りのぼかしの数値。
+        縁色：縁取りの色。
+        変化速度：何フレームに何回変化させるか0以上の実数で指定する。0で無効化。（例：60フレームの動画でここの数値を60にすると1秒に1回変化する。）
+        seed：シード値。再現性のあるランダム値にする。0以上ではどのレイヤーに置くかで変わってくる。負の値でレイヤーによる出力の変化を無効化する。
+
+    by Korarei
+]]--
+
+
+--track0:X個数,1,100,3,1
+--track1:Y個数,1,100,3,1
+--track2:間隔,-1000,1000,0
+--track3:個数,1,2000,3,1
+--check0:ランダム配置,1
+--dialog:サイズ,_1=100; 色/col,_2=0xffffff; 縦横比[-1，1],_3=0; ライン幅,_4=4000; 縁取り/chk,_5=0; └縁サイズ,_6=0; └縁ぼかし,_7=0; └縁色/col,_8=0x000000; 変化速度,_9=0; seed,_10=-1;
+
+local chk, mes = pcall(function()
+local min, sqrt, sin, atan, floor = math.min, math.sqrt, math.sin, math.atan, math.floor
+
+local x_range = obj.track0 - 1
+local y_range = obj.track1 - 1
+local n = obj.track3
+local check_random = obj.check0
+local size = _1 _1 = nil
+local col = _2 _2 = nil
+local aspect = _3 _3 = nil
+local line = _4 _4 = nil
+local check_edge = _5 == 1 _5 = nil
+local edge_size = _6 _6 = nil
+local edge_blur = _7 _7 = nil
+local edge_col = _8 _8 = nil
+local sp = _9 _9 = nil
+local seed = _10 _10 = nil
+local interval = check_edge and obj.track2 + edge_size * 2 or obj.track2
+assert(size >= 0, "サイズは0以上で入力してください。")
+assert(aspect >= -1 and aspect <= 1, "閉区間[-1,1]内の実数で入力してください。")
+assert(line >= 0, "ライン幅は0以上の実数を入力してください。")
+assert(sp >= 0, "変化速度は0以上の実数を入力してください。")
+
+if n == 0 then
+    return
+end
+
+obj.load("figure", "三角形", col, size, line)
+obj.aspect = aspect
+if check_edge then
+    obj.effect("縁取り", "サイズ", edge_size, "ぼかし", edge_blur, "color", edge_col)
+end
+obj.effect()
+
+--ループ外で計算しておく
+local i, j
+local x_cal = size * sqrt(3) / 4 * min(1 - aspect, 1) + interval / sin(atan(sqrt(3) * min(1 + aspect, 1) / min(1 - aspect, 1)))
+local y_cal = size * 3 / 4 * min(1 + aspect, 1) + interval
+
+--位置を受け取り、三角形を描画する関数
+local function draw(i, j)
+    --間隔計算
+    local d =  i % 2 == j % 2 and size / 8 or -size / 8
+    --座標計算
+    local x = (i - x_range * 0.5) * x_cal
+    local y = (j - y_range * 0.5) * y_cal + d * min(1 + aspect, 1)
+    --三角形の向きを計算
+    local rz =  i % 2 == j % 2 and 0 or 180
+
+    obj.draw(x, y, 0, 1, 1, 0, 0, rz)
+end
+
+--実際に描画
+if check_random then
+    local frame = sp == 0 and 0 or floor(obj.frame / sp)
+    --乱数生成(改善できそう)
+    local rand
+    if obj.randex then
+        rand = obj.randex(seed, frame)
+    else
+        rand = function(st, ed)
+            seed = seed < 0 and seed - 1 or seed + 1
+            return obj.rand(st, ed, seed, frame)
+        end
+    end
+    --描画用ループ
+    for a = 1, n do
+        i, j = rand(0, x_range), rand(0, y_range)
+        draw(i, j)
+    end
+else
+    for j = 0, y_range do
+        for i = 0, x_range do
+             draw(i, j)
+        end
+    end 
+end
+end)
+if not chk then
+    setfont("游ゴシック",50)
+    obj.load("text", "[ランダム三角ポリ配置.anm]\n"..mes)
+    obj.draw()
+    error("[ランダム三角ポリ配置.anm]"..mes)
+end
